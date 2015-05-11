@@ -108,7 +108,7 @@ var data = {
 		children: ['r3_3', 'r3_4']
 	},
 	// 1
-	'r5_3': {
+	'r5_1': {
 		data: { name: 'Germany' },
 		children: ['r4_1', 'r4_2']
 	}

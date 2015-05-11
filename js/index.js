@@ -56,7 +56,7 @@ KnockoutTable.prototype = {
 			first, last;
 
 		while(q.length) {
-			cell = q.pop();
+			cell = q.shift();
 			if (cell.children && cell.children.length) q = q.concat(cell.children);
 
 			cell.level = level;

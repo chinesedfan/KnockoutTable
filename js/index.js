@@ -82,8 +82,8 @@ KnockoutTable.prototype = {
 				first = cell.children[0];
 				last = cell.children[cell.children.length - 1];
 
-				cell.left = first.x + self.options.cell.width + linkerWidth;
-				cell.top = (first.y + last.y) / 2;
+				cell.left = first.left + self.options.cell.width + linkerWidth;
+				cell.top = (first.top + last.top) / 2;
 			}
 		});
 	},

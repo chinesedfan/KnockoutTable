@@ -71,8 +71,8 @@ KnockoutTable.prototype = {
 		}
 		level--;
 
-		self.canvas.width((self.options.cell.width + linkerWidth) * (level + 1) - linkerWidth);
-		self.canvas.height((self.options.cell.height + self.options.cell.padding) * Math.pow(2, level) - self.options.cell.padding);
+		self.canvas.attr('width', ((self.options.cell.width + linkerWidth) * (level + 1) - linkerWidth) + 'px');
+		self.canvas.attr('height', ((self.options.cell.height + self.options.cell.padding) * Math.pow(2, level) - self.options.cell.padding) + 'px');
 		self.context2d = this.canvas.get(0).getContext('2d');
 
 		_.each(self.options.data, function(cell, key) {

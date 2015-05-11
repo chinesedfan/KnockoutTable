@@ -1,5 +1,7 @@
 function KnockoutTable(container, options) {
-	this.container = container || $('<canvas></canvas>').appendTo($('body'));
+	this.container = container || $('<div></div>').appendTo($('body'));
+	this.canvas = $('<canvas></canvas>').appendTo(this.container);
+
 	this.options = $.extend({
 		orient: 'horizontal', // or 'vertical'
 		expansion: 'single',  // or 'double'
@@ -67,15 +69,15 @@ KnockoutTable.prototype = {
 				count = q.length;
 			}
 		}
-
-		self.container.width((self.options.cell.width + linkerWidth) * level - linkerWidth);
-		self.container.height((self.options.cell.height + self.options.cell.padding) * Math.pow(2, level) - self.options.cell.padding);
 		level--;
+
+		self.canvas.width((self.options.cell.width + linkerWidth) * level - linkerWidth);
+		self.canvas.height((self.options.cell.height + self.options.cell.padding) * Math.pow(2, level) - self.options.cell.padding);
 
 		_.each(self.options.data, function(cell, key) {
 			if (!cell.children) {
 				cell.left = (level - cell.level) * (self.options.cell.width + linkerWidth);
-				cell.top = self.index * (self.options.cell.height + self.options.cell.padding);
+				cell.top = cell.index * (self.options.cell.height + self.options.cell.padding);
 			} else {
 				first = cell.children[0];
 				last = cell.children[cell.children.length - 1];
@@ -133,7 +135,7 @@ KnockoutTable.prototype = {
 		if (!this.options.data || !_.keys(this.options.data).length) return;
 
 		this.cellTemplate = _.template(this.options.cell.template);
-		this.context2d = this.container.get(0).getContext('2d');
+		this.context2d = this.canvas.get(0).getContext('2d');
 
 		// turn string reference into object reference
 		this.refreshRefrence();

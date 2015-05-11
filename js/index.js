@@ -71,8 +71,9 @@ KnockoutTable.prototype = {
 		}
 		level--;
 
-		self.canvas.width((self.options.cell.width + linkerWidth) * level - linkerWidth);
+		self.canvas.width((self.options.cell.width + linkerWidth) * (level + 1) - linkerWidth);
 		self.canvas.height((self.options.cell.height + self.options.cell.padding) * Math.pow(2, level) - self.options.cell.padding);
+		self.context2d = this.canvas.get(0).getContext('2d');
 
 		_.each(self.options.data, function(cell, key) {
 			if (!cell.children) {
@@ -103,6 +104,8 @@ KnockoutTable.prototype = {
 				height: self.options.cell.height
 			}).appendTo(self.container);
 
+			if (!value.children || !value.children.length) return true;
+
 			_.each(value.children, function(child, i) {
 				x = child.left + self.options.cell.width;
 				y = child.top + self.options.cell.height / 2;
@@ -123,7 +126,7 @@ KnockoutTable.prototype = {
 	},
 	drawLine: function(x, y, xDelta, yDelta) {
 		this.context2d.moveTo(x, y);
-		this.context2d.lineTo(xDelta, yDelta);
+		this.context2d.lineTo(x + xDelta, y + yDelta);
 		this.context2d.stroke();
 	},
 
@@ -135,7 +138,6 @@ KnockoutTable.prototype = {
 		if (!this.options.data || !_.keys(this.options.data).length) return;
 
 		this.cellTemplate = _.template(this.options.cell.template);
-		this.context2d = this.canvas.get(0).getContext('2d');
 
 		// turn string reference into object reference
 		this.refreshRefrence();

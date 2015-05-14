@@ -27,15 +27,33 @@ function KnockoutTable(container, options) {
 }
 
 KnockoutTable.prototype = {
-	findRoot: function() {
-		var root;
+	findRoots: function() {
+		var roots = [];
 		_.each(this.options.data, function(value, key) {
 			if (!value.parent) {
-				root = value;
-				return true;
+				roots.push(value);
 			}
 		});
-		return root;
+		return roots;
+	},
+	travelByLevel: function(root) {
+		var q =[root], cell,
+			level = 0, count = 1, index = 0;
+
+		while(q.length) {
+			cell = q.shift();
+			if (cell.children && cell.children.length) q = q.concat(cell.children);
+
+			cell.level = level;
+			cell.index = index++;
+			if (index == count) {
+				level++;
+				index = 0;
+				count = q.length;
+			}
+		}
+
+		return level;
 	},
 
 	refreshRefrence: function() {
@@ -52,32 +70,17 @@ KnockoutTable.prototype = {
 	},
 	refreshCoordinate: function() {
 		var self = this,
-			root = self.findRoot(), q = [root], cell,
-			level = 0, count = 1, index = 0,
+			root = self.findRoots()[0], level = self.travelByLevel(root),
 			linkerWidth = self.options.linker.input.width + self.options.linker.output.width,
 			first, last;
 
-		while(q.length) {
-			cell = q.shift();
-			if (cell.children && cell.children.length) q = q.concat(cell.children);
-
-			cell.level = level;
-			cell.index = index++;
-			if (index == count) {
-				level++;
-				index = 0;
-				count = q.length;
-			}
-		}
-		level--;
-
-		self.canvas.attr('width', ((self.options.cell.width + linkerWidth) * (level + 1) - linkerWidth) + 'px');
-		self.canvas.attr('height', ((self.options.cell.height + self.options.cell.padding) * Math.pow(2, level) - self.options.cell.padding) + 'px');
+		self.canvas.attr('width', ((self.options.cell.width + linkerWidth) * level - linkerWidth) + 'px');
+		self.canvas.attr('height', ((self.options.cell.height + self.options.cell.padding) * Math.pow(2, level - 1) - self.options.cell.padding) + 'px');
 		self.context2d = this.canvas.get(0).getContext('2d');
 
 		_.each(self.options.data, function(cell, key) {
 			if (!cell.children) {
-				cell.left = (level - cell.level) * (self.options.cell.width + linkerWidth);
+				cell.left = (level - 1 - cell.level) * (self.options.cell.width + linkerWidth);
 				cell.top = cell.index * (self.options.cell.height + self.options.cell.padding);
 			} else {
 				first = cell.children[0];

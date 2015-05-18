@@ -73,6 +73,7 @@ KnockoutTable.prototype = {
 				_.each(cell.children, function(child, i) {
 					cell.width += child.width + self.options.cell.padding;
 				});
+				cell.width -= self.options.cell.padding;
 			}
 		}
 	},

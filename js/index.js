@@ -164,28 +164,28 @@ KnockoutTable.prototype = {
 			if (!value.children || !value.children.length) return true;
 
 			_.each(value.children, function(child, i) {
-				x = child.x + self.options.cell.width;
-				y = child.y + self.options.cell.height / 2;
-				self.drawLine(x, y, self.options.linker.input.height, 0);
+				x = child.x + self.options.cell.width / 2;
+				y = child.y;
+				self.drawLine(x, y, 0, -self.options.linker.input.height);
 
 				if (i == 0) {
-					busStartX = x + self.options.linker.input.height;
-					busStartY = y;
+					busStartX = x;
+					busStartY = y - self.options.linker.input.height;
 				} else if (i == value.children.length - 1) {
-					busEndX = x + self.options.linker.input.height;
-					busEndY = y;
+					busEndX = x;
+					busEndY = y - self.options.linker.input.height;
 				}
 			});
 
 			self.drawLine(busStartX, busStartY, busEndX - busStartX, busEndY - busStartY);
-			self.drawLine(busStartX, (busStartY + busEndY) / 2, self.options.linker.output.height, 0);
+			self.drawLine((busStartX + busEndX) / 2, busStartY, 0, -self.options.linker.output.height);
 		});
 	},
 	drawLine: function(x, y, xDelta, yDelta) {
 		var obj1 = this.translateXY(x, y),
 			obj2 = this.translateXY(x + xDelta, y + yDelta);
 
-		this.context2d.moveTo(obj1.left, obj2.top);
+		this.context2d.moveTo(obj1.left, obj1.top);
 		this.context2d.lineTo(obj2.left, obj2.top);
 		this.context2d.stroke();
 	},

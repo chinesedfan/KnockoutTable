@@ -76,18 +76,18 @@ KnockoutTable.prototype = {
 		switch (this.options.orient) {
 			case 'top':
 				obj.left = x - this.minX;
-				obj.top = y - this.maxY;
+				obj.top = y - this.minY;
 				break;
 			case 'bottom':
 				obj.left = this.width - (x -  this.minX);
-				obj.top = this.height - (y - this.maxY);
+				obj.top = this.height - (y - this.minY);
 				break;
 			case 'left':
-				obj.left = y - this.maxY;
+				obj.left = y - this.minY;
 				obj.top = this.height - (x - this.minX);
 				break;
 			case 'right':
-				obj.left = this.width - (y - this.maxY);
+				obj.left = this.width - (y - this.minY);
 				obj.top = x - this.minX;
 				break;
 		}

@@ -2,28 +2,27 @@ function KnockoutTable(container, options) {
 	this.container = container || $('<div></div>').appendTo($('body'));
 	this.canvas = $('<canvas></canvas>').appendTo(this.container);
 
-	this.options = $.extend({
-		orient: 'horizontal', // or 'vertical'
+	this.options = {
+		orient: 'top', // or 'bottom, left, right', means the position of the root node
 		expansion: 'single',  // or 'double'
 		padding: 0, // or { left: 0, right: 0, top: 0, bottom: 0 }
 		cell: {
 			width: 120,
 			height: 90,
-			padding: 30, // the distance between 2 cells
+			padding: 30, // the distance between 2 sibling cells
 			template: '<div class="match-item"><%- name %></div>'
 		},
 		linker: {
-			color: 'black',
-			borderWidth: 5,
 			bus: {},
 			input: {
-				width: 50
+				height: 50
 			},
 			output: {
-				width: 50
+				height: 50
 			}
 		}
-	}, options || {});
+	};
+	this.config(options);
 }
 
 KnockoutTable.prototype = {
@@ -42,7 +41,10 @@ KnockoutTable.prototype = {
 
 		while(q.length) {
 			cell = q.shift();
-			if (cell.children && cell.children.length) q = q.concat(cell.children);
+			if (cell.children && cell.children.length) {
+				q = q.concat(cell.children);
+				this.refreshChildrenXY(cell);
+			}
 
 			cell.level = level;
 			cell.index = index++;
@@ -52,8 +54,44 @@ KnockoutTable.prototype = {
 				count = q.length;
 			}
 		}
+	},
+	refreshChildrenXY: function(cell) {
+		var self = this,
+			x = cell.x - (self.options.cell.width + self.options.cell.padding) * (cell.children.length - 1) / 2,
+			y = cell.y + (self.options.cell.height + self.linkerHeight);
 
-		return level;
+		_.each(cell.children, function(child, i) {
+			child.x = x;
+			child.y = y;
+			if (x > self.maxX) self.maxX = x;
+			if (x < self.minX) self.minX = x;
+			if (y > self.maxY) self.maxY = y;
+			if (y < self.minY) self.minY = y;
+
+			x += (self.options.cell.width + self.options.cell.padding);
+		});
+	},
+	translateXY: function(x, y) {
+		var obj = {};
+		switch (this.options.orient) {
+			case 'top':
+				obj.left = x - this.minX;
+				obj.top = y - this.maxY;
+				break;
+			case 'bottom':
+				obj.left = this.width - (x -  this.minX);
+				obj.top = this.height - (y - this.maxY);
+				break;
+			case 'left':
+				obj.left = y - this.maxY;
+				obj.top = this.height - (x - this.minX);
+				break;
+			case 'right':
+				obj.left = this.width - (y - this.maxY);
+				obj.top = x - this.minX;
+				break;
+		}
+		return obj;
 	},
 
 	refreshRefrence: function() {
@@ -70,72 +108,71 @@ KnockoutTable.prototype = {
 	},
 	refreshCoordinate: function() {
 		var self = this,
-			root = self.findRoots()[0], level = self.travelByLevel(root),
-			linkerWidth = self.options.linker.input.width + self.options.linker.output.width,
-			first, last;
+			root = self.findRoots()[0];
 
-		self.canvas.attr('width', ((self.options.cell.width + linkerWidth) * level - linkerWidth) + 'px');
-		self.canvas.attr('height', ((self.options.cell.height + self.options.cell.padding) * Math.pow(2, level - 1) - self.options.cell.padding) + 'px');
-		self.context2d = this.canvas.get(0).getContext('2d');
+		self.minX = self.maxX = root.x = 0;
+		self.minY = self.maxY = root.y = 0;
+		self.travelByLevel(root);
 
-		_.each(self.options.data, function(cell, key) {
-			if (!cell.children) {
-				cell.left = (level - 1 - cell.level) * (self.options.cell.width + linkerWidth);
-				cell.top = cell.index * (self.options.cell.height + self.options.cell.padding);
-			} else {
-				first = cell.children[0];
-				last = cell.children[cell.children.length - 1];
-
-				cell.left = first.left + self.options.cell.width + linkerWidth;
-				cell.top = (first.top + last.top) / 2;
-			}
-		});
+		self.width = (self.maxX - self.minX + self.options.cell.width);
+		self.height = (self.maxY - self.minY + self.options.cell.height);
+		self.canvas.attr(self.isHorizontal ? 'width' : 'height', self.width + 'px');
+		self.canvas.attr(self.isHorizontal ? 'height' : 'width', self.height + 'px');
+		self.context2d = self.canvas.get(0).getContext('2d');
 	},
 	doDraw: function() {
 		var self = this,
-			html,
+			html, css,
 			busStartX, busStartY, busEndX, busEndY;
 
 		self.container.css('position', 'relative');
 		_.each(this.options.data, function(value, key) {
-			html = self.cellTemplate(value.data);
-			$(html).css({
+			css = $.extend({
 				position: 'absolute',
-				top: value.top,
-				left: value.left,
-				width: self.options.cell.width,
-				height: self.options.cell.height
-			}).appendTo(self.container);
+				width: self.isHorizontal ? self.options.cell.width : self.options.cell.height,
+				height: self.isHorizontal ? self.options.cell.height : self.options.cell.width
+			}, self.translateXY(value.x, value.y));
+
+			html = self.cellTemplate(value.data);
+			$(html).css(css).appendTo(self.container);
 
 			if (!value.children || !value.children.length) return true;
 
 			_.each(value.children, function(child, i) {
-				x = child.left + self.options.cell.width;
-				y = child.top + self.options.cell.height / 2;
-				self.drawLine(x, y, self.options.linker.input.width, 0);
+				x = child.x + self.options.cell.width;
+				y = child.y + self.options.cell.height / 2;
+				self.drawLine(x, y, self.options.linker.input.height, 0);
 
 				if (i == 0) {
-					busStartX = x + self.options.linker.input.width;
+					busStartX = x + self.options.linker.input.height;
 					busStartY = y;
 				} else if (i == value.children.length - 1) {
-					busEndX = x + self.options.linker.input.width;
+					busEndX = x + self.options.linker.input.height;
 					busEndY = y;
 				}
 			});
 
 			self.drawLine(busStartX, busStartY, busEndX - busStartX, busEndY - busStartY);
-			self.drawLine(busStartX, (busStartY + busEndY) / 2, self.options.linker.output.width, 0);
+			self.drawLine(busStartX, (busStartY + busEndY) / 2, self.options.linker.output.height, 0);
 		});
 	},
 	drawLine: function(x, y, xDelta, yDelta) {
-		this.context2d.moveTo(x, y);
-		this.context2d.lineTo(x + xDelta, y + yDelta);
+		var obj1 = this.translateXY(x, y),
+			obj2 = this.translateXY(x + xDelta, y + yDelta);
+
+		this.context2d.moveTo(obj1.left, obj2.top);
+		this.context2d.lineTo(obj2.left, obj2.top);
 		this.context2d.stroke();
 	},
 
 	constructor: KnockoutTable,
 	config: function(options) {
 		this.options = $.extend(this.options, options || {});
+
+		// the orientation of the same level cells
+		this.isHorizontal = this.options.orient == 'top' || this.options.orient == 'bottom';
+		// the total height of the linker
+		this.linkerHeight = this.options.linker.input.height + this.options.linker.output.height;
 	},
 	draw: function() {
 		if (!this.options.data || !_.keys(this.options.data).length) return;

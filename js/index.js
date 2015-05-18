@@ -82,16 +82,16 @@ KnockoutTable.prototype = {
 			y = cell.y + (self.options.cell.height + self.linkerHeight);
 
 		_.each(cell.children, function(child, i) {
-			x += child.width / 2;
+			x += child.width / 2 - self.options.cell.width / 2;
 
-			child.x = x - self.options.cell.width / 2;
+			child.x = x;
 			child.y = y;
 			if (x > self.maxX) self.maxX = x;
 			if (x < self.minX) self.minX = x;
 			if (y > self.maxY) self.maxY = y;
 			if (y < self.minY) self.minY = y;
 
-			x += child.width / 2;
+			x += self.options.cell.width / 2 + child.width / 2 + self.options.cell.padding;
 		});
 	},
 	translateXY: function(x, y) {

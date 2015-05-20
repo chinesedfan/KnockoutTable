@@ -97,22 +97,31 @@ KnockoutTable.prototype = {
 	},
 	translateXY: function(x, y) {
 		var obj = {};
+		x -= this.minX;
+		y -= this.minY;
+
+		// for elements, use top/bottom/left/right
+		// for points, use x/y
 		switch (this.options.orient) {
 			case 'top':
-				obj.left = x - this.minX;
-				obj.top = y - this.minY;
+				obj.left = obj.x = x;
+				obj.top = obj.y = y;
 				break;
 			case 'bottom':
-				obj.left = this.width - (x -  this.minX);
-				obj.top = this.height - (y - this.minY);
+				obj.right = x;
+				obj.bottom = y;
+				obj.x = this.width - x;
+				obj.y = this.height - y;
 				break;
 			case 'left':
-				obj.left = y - this.minY;
-				obj.top = this.height - (x - this.minX);
+				obj.left = obj.x = y;
+				obj.bottom = x;
+				obj.y = this.width - x;
 				break;
 			case 'right':
-				obj.left = this.width - (y - this.minY);
-				obj.top = x - this.minX;
+				obj.top = obj.y = x;
+				obj.right = y;
+				obj.x = this.height - y;
 				break;
 		}
 		return obj;
@@ -145,6 +154,8 @@ KnockoutTable.prototype = {
 		self.canvas.attr(self.isHorizontal ? 'width' : 'height', self.width + 'px');
 		self.canvas.attr(self.isHorizontal ? 'height' : 'width', self.height + 'px');
 		self.context2d = self.canvas.get(0).getContext('2d');
+		self.container.css('width', self.canvas.attr('width'));
+		self.container.css('height', self.canvas.attr('height'));
 	},
 	doDraw: function() {
 		var self = this,
@@ -186,8 +197,8 @@ KnockoutTable.prototype = {
 		var obj1 = this.translateXY(x, y),
 			obj2 = this.translateXY(x + xDelta, y + yDelta);
 
-		this.context2d.moveTo(obj1.left, obj1.top);
-		this.context2d.lineTo(obj2.left, obj2.top);
+		this.context2d.moveTo(obj1.x, obj1.y);
+		this.context2d.lineTo(obj2.x, obj2.y);
 		this.context2d.stroke();
 	},
 

@@ -1,4 +1,4 @@
-var data = {
+var WC2014Data = {
 	// 16
 	'r1_1': {
 		data: { name: 'Brazil' }
@@ -113,8 +113,3 @@ var data = {
 		children: ['r4_1', 'r4_2']
 	}
 };
-
-var table = new KnockoutTable($('.J_container'), {
-	data: data
-});
-table.draw();

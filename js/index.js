@@ -175,22 +175,20 @@ KnockoutTable.prototype = {
 
 			if (!value.children || !value.children.length) return true;
 
+			busStartX = busEndX = value.x + self.options.cell.width / 2;
+			busStartY = busEndY = value.y + self.options.cell.height + self.options.linker.input.height;
+
 			_.each(value.children, function(child, i) {
 				x = child.x + self.options.cell.width / 2;
 				y = child.y;
-				self.drawLine(x, y, 0, -self.options.linker.input.height);
+				self.drawLine(x, y, 0, busStartY - y);
 
-				if (i == 0) {
-					busStartX = x;
-					busStartY = y - self.options.linker.input.height;
-				} else if (i == value.children.length - 1) {
-					busEndX = x;
-					busEndY = y - self.options.linker.input.height;
-				}
+				if (x < busStartX) busStartX = x;
+				if (x > busEndX) busEndX = x;
 			});
 
 			self.drawLine(busStartX, busStartY, busEndX - busStartX, busEndY - busStartY);
-			self.drawLine((busStartX + busEndX) / 2, busStartY, 0, -self.options.linker.output.height);
+			self.drawLine(value.x + self.options.cell.width / 2, busStartY, 0, -self.options.linker.output.height);
 		});
 	},
 	drawLine: function(x, y, xDelta, yDelta) {

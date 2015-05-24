@@ -10,7 +10,7 @@ function KnockoutTable(container, options) {
 			width: 120,
 			height: 90,
 			padding: 30, // the distance between 2 sibling cells
-			template: '<div class="match-item"><%- name %></div>'
+			template: '<div class="match-item" style="text-align: center; border: solid 1px red;"><%- name %></div>'
 		},
 		linker: {
 			bus: {},

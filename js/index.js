@@ -245,7 +245,7 @@ KnockoutTable.prototype = {
 
 	constructor: KnockoutTable,
 	config: function(options) {
-		this.options = $.extend(this.options, options || {});
+		this.options = $.extend(true, this.options, options || {});
 
 		// the orientation of the same level cells
 		this.isHorizontal = this.options.orient == 'top' || this.options.orient == 'bottom';

@@ -7,12 +7,10 @@ function getUrlParam(name, targetStr) {
 }
 
 var test = getUrlParam('test') || '0';
-var datas = {
-	"0": WC2014Data,
-	"1": SimCityData
+var options = {
+	"0": { data: WC2014Data },
+	"1": { cell: { width: 50, height: 20, padding: 5 }, data: SimCityData }
 };
 
-var table = new KnockoutTable($('.J_container'), {
-	data: datas[test]
-});
+var table = new KnockoutTable($('.J_container'), options[test]);
 table.draw();

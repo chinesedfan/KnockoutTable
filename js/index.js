@@ -80,20 +80,58 @@ KnockoutTable.prototype = {
 
 			child.x = x;
 			child.y = y;
-			if (x > self.maxX) self.maxX = x;
-			if (x < self.minX) self.minX = x;
-			if (y > self.maxY) self.maxY = y;
-			if (y < self.minY) self.minY = y;
+			self.refreshMinMax(child);
 
 			x += self.options.cell.width / 2 + child.width / 2 + self.options.cell.padding;
 		});
 	},
-	travelByBFS: function(root) {
+	refreshParentsXY: function(cell) {
 		var self = this;
+
+		if (!cell.parents || !cell.parents.length) {
+			self.travelByLevel(cell);
+			return;
+		}
+
+		_.each(cell.parents, function(parent, i) {
+			if (!_.isUndefined(parent.x)) return true;
+
+			var width = 0;
+			_.each(parent.children, function(child, j) {
+				if (child == cell) return false;
+
+				width += child.width + self.options.cell.padding;
+			});
+
+			parent.x = cell.x - width;
+			parent.y = cell.y - self.linkerHeight;
+			self.refreshMinMax(parent);
+			self.refreshParentsXY(parent);
+		});
+	},
+	refreshMinMax: function(cell) {
+		if (cell.x > this.maxX) this.maxX = cell.x;
+		if (cell.x < this.minX) this.minX = cell.x;
+		if (cell.y > this.maxY) this.maxY = cell.y;
+		if (cell.y < this.minY) this.minY = cell.y;
+	},
+	travelByBFS: function(root) {
+		var self = this,
+			q = [root], cell;
 		
 		self.minX = self.maxX = root.x = 0;
 		self.minY = self.maxY = root.y = 0;
-		self.travelByLevel(root);
+		
+		while (q.length) {
+			cell = q.shift();
+			if (cell.children && cell.children.length) {
+				q = q.concat(cell.children);
+				self.refreshChildrenXY(cell);
+			}
+			if (cell.parents && cell.parents.length > 1) {
+				self.refreshParentsXY(cell);
+			}
+		}
 
 		self.width = (self.maxX - self.minX + self.options.cell.width);
 		self.height = (self.maxY - self.minY + self.options.cell.height);

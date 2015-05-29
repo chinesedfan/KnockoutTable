@@ -61,6 +61,7 @@ KnockoutTable.prototype = {
 
 		while (stack.length) {
 			cell = stack.pop();
+			if (cell.width) continue;
 
 			if (!cell.children || !cell.children.length) {
 				cell.width = self.options.cell.width;
@@ -69,6 +70,7 @@ KnockoutTable.prototype = {
 				stack.push(cell);
 				stack = stack.concat(cell.children);
 			} else {
+				cell.visited = false;
 				cell.width = 0;
 				_.each(cell.children, function(child, i) {
 					cell.width += child.width + self.options.cell.padding;
@@ -94,6 +96,21 @@ KnockoutTable.prototype = {
 
 			x += self.options.cell.width / 2 + child.width / 2 + self.options.cell.padding;
 		});
+	},
+	travelByBFS: function(root) {
+		var self = this;
+		
+		self.minX = self.maxX = root.x = 0;
+		self.minY = self.maxY = root.y = 0;
+		self.travelByLevel(root);
+
+		self.width = (self.maxX - self.minX + self.options.cell.width);
+		self.height = (self.maxY - self.minY + self.options.cell.height);
+		self.canvas.attr(self.isHorizontal ? 'width' : 'height', self.width + 'px');
+		self.canvas.attr(self.isHorizontal ? 'height' : 'width', self.height + 'px');
+		self.context2d = self.canvas.get(0).getContext('2d');
+		self.container.css('width', self.canvas.attr('width'));
+		self.container.css('height', self.canvas.attr('height'));
 	},
 	translateXY: function(x, y) {
 		var obj = {};
@@ -141,21 +158,15 @@ KnockoutTable.prototype = {
 	},
 	refreshCoordinate: function() {
 		var self = this,
-			root = self.findRoots()[0];
+			roots = self.findRoots();
 
-		self.travelByPostOrder(root);
+		// calculate the width of each cell
+		_.each(roots, function(root, i) {
+			self.travelByPostOrder(root);
+		});
 
-		self.minX = self.maxX = root.x = (root.width - self.options.cell.width) / 2;
-		self.minY = self.maxY = root.y = 0;
-		self.travelByLevel(root);
-
-		self.width = (self.maxX - self.minX + self.options.cell.width);
-		self.height = (self.maxY - self.minY + self.options.cell.height);
-		self.canvas.attr(self.isHorizontal ? 'width' : 'height', self.width + 'px');
-		self.canvas.attr(self.isHorizontal ? 'height' : 'width', self.height + 'px');
-		self.context2d = self.canvas.get(0).getContext('2d');
-		self.container.css('width', self.canvas.attr('width'));
-		self.container.css('height', self.canvas.attr('height'));
+		// calculate the x/y by BFS
+		self.travelByBFS(roots[0]);
 	},
 	doDraw: function() {
 		var self = this,

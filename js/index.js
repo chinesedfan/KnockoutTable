@@ -29,7 +29,7 @@ KnockoutTable.prototype = {
 	findRoots: function() {
 		var roots = [];
 		_.each(this.options.data, function(value, key) {
-			if (!value.parent) {
+			if (!value.parents || !value.parents.length) {
 				roots.push(value);
 			}
 		});
@@ -145,14 +145,17 @@ KnockoutTable.prototype = {
 	},
 
 	refreshRefrence: function() {
-		var self = this;
+		var self = this, child;
 
 		_.each(this.options.data, function(value, key) {
 			if (!value.children) return true;
 
 			_.each(value.children, function(str, i) {
-				value.children[i] = self.options.data[str];
-				value.children[i].parent = value;
+				child = self.options.data[str];
+				if (!child.parents) child.parents = [];
+				child.parents.push(value);
+
+				value.children[i] = child;
 			});
 		});
 	},

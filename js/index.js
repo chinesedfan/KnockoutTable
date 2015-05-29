@@ -36,22 +36,13 @@ KnockoutTable.prototype = {
 		return roots;
 	},
 	travelByLevel: function(root) {
-		var q =[root], cell,
-			level = 0, count = 1, index = 0;
+		var q =[root], cell;
 
 		while(q.length) {
 			cell = q.shift();
 			if (cell.children && cell.children.length) {
 				q = q.concat(cell.children);
 				this.refreshChildrenXY(cell);
-			}
-
-			cell.level = level;
-			cell.index = index++;
-			if (index == count) {
-				level++;
-				index = 0;
-				count = q.length;
 			}
 		}
 	},

@@ -22,7 +22,7 @@ function KnockoutTable(container, options) {
 				height: 50
 			},
 			output: { // parent's side
-				color: 'red',
+				color: 'blue',
 				height: 40
 			}
 		}

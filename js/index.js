@@ -13,12 +13,16 @@ function KnockoutTable(container, options) {
 			template: '<div class="match-item" style="text-align: center; border: solid 1px red;"><%- name %></div>'
 		},
 		linker: {
-			bus: {},
+			bus: {
+				color: 'black'
+			},
 			input: { // child's side
 				offset: 0,
+				color: 'green',
 				height: 50
 			},
 			output: { // parent's side
+				color: 'red',
 				height: 40
 			}
 		}
@@ -215,6 +219,8 @@ KnockoutTable.prototype = {
 
 			// draw the line between the cell and its parent's bus
 			_.each(_.sortBy(value.parents, 'x'), function(parent, i) {
+				self.context2d.beginPath();
+				self.context2d.strokeStyle = self.options.linker.input.color;
 				self.drawLine(value.x + self.options.cell.width / 2 + (i - value.parents.length / 2) * self.options.linker.input.offset, value.y,
 						0, parent.y + self.options.cell.height + self.options.linker.output.height - value.y);
 			});
@@ -233,7 +239,12 @@ KnockoutTable.prototype = {
 				if (x > busEndX) busEndX = x;
 			});
 
+			self.context2d.beginPath();
+			self.context2d.strokeStyle = self.options.linker.bus.color;
 			self.drawLine(busStartX, busStartY, busEndX - busStartX, busEndY - busStartY);
+
+			self.context2d.beginPath();
+			self.context2d.strokeStyle = self.options.linker.output.color;
 			self.drawLine(value.x + self.options.cell.width / 2, busStartY, 0, -self.options.linker.output.height);
 		});
 	},

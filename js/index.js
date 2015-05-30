@@ -14,12 +14,12 @@ function KnockoutTable(container, options) {
 		},
 		linker: {
 			bus: {},
-			input: {
+			input: { // child's side
 				offset: 0,
 				height: 50
 			},
-			output: {
-				height: 50
+			output: { // parent's side
+				height: 40
 			}
 		}
 	};
@@ -223,7 +223,7 @@ KnockoutTable.prototype = {
 			if (!value.children || !value.children.length) return true;
 
 			busStartX = busEndX = value.x + self.options.cell.width / 2;
-			busStartY = busEndY = value.y + self.options.cell.height + self.options.linker.input.height;
+			busStartY = busEndY = value.y + self.options.cell.height + self.options.linker.output.height;
 
 			_.each(value.children, function(child, i) {
 				x = child.x + self.options.cell.width / 2;

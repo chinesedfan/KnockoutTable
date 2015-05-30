@@ -42,7 +42,7 @@ function generateSimCityData() {
 			product: {
 				chair: { minute: 20, requires: { wood: 2, nail: 1, hammer: 1} },
 				desk: { minute: 30, requires: { board: 1, nail: 2, hammer: 1} },
-				household: { minute: 75, requires: { textile: 2, rule: 1 } },
+				household: { minute: 75, requires: { textile: 2, ruler: 1 } },
 				sofa: { minute: 150, requires: { textile: 3, drill: 1, glue: 1 } },
 			}
 		},
@@ -50,7 +50,7 @@ function generateSimCityData() {
 			slot: 6,
 			product: {
 				hammer: { minute: 14, requires: { metal: 1, wood: 1 } },
-				rule: { minute: 20, requires: { metal: 1, plastic: 1 } },
+				ruler: { minute: 20, requires: { metal: 1, plastic: 1 } },
 				shovel: { minute: 30, requires: { metal: 1, wood: 1, plastic: 1 } },
 				kitchenware: { minute: 45, requires: { metal: 2, wood: 2, plastic: 2 } },
 				drill: { minute: 120, requires: { metal: 2, plastic: 2, chip: 1 } }
@@ -89,10 +89,10 @@ function generateSimCityData() {
 		fashionShop: {
 			slot: 4,
 			product: {
-				hat: { minute: 60, requires: { textile: 2, rule: 1 } },
+				hat: { minute: 60, requires: { textile: 2, ruler: 1 } },
 				shoe: { minute: 75, requires: { textile: 2, plastic: 1, glue: 1 } },
 				watch: { minute: 90, requires: { plastic: 2, glass: 1, chemical: 1 } },
-				suit: { minute: 210, requires: { textile: 3, rule: 1, glue: 1 } }
+				suit: { minute: 210, requires: { textile: 3, ruler: 1, glue: 1 } }
 			}
 		},
 		applianceShop: {

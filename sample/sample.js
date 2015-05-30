@@ -9,7 +9,11 @@ function getUrlParam(name, targetStr) {
 var test = getUrlParam('test') || '0';
 var options = {
 	"0": { data: WC2014Data },
-	"1": { cell: { width: 50, height: 20, padding: 50 }, data: SimCityData }
+	"1": {
+		cell: { width: 50, height: 30, padding: 60 },
+	    linker: { input: { offset: 5, height: 100 }, output: { height: 50 } },
+	    data: SimCityData
+	}
 };
 
 var table = new KnockoutTable($('.J_container'), options[test]);

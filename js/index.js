@@ -118,11 +118,16 @@ KnockoutTable.prototype = {
 	},
 	travelByBFS: function(root) {
 		var self = this;
-		
-		self.minX = self.maxX = root.x = 0;
-		self.minY = self.maxY = root.y = 0;
+
+		root.x = root.y = 0;
 		
 		self.travelByLevel(root);
+		self.optimizeCoordinate();
+
+		self.minX = _.min(self.options.data, 'x').x;
+		self.maxX = _.max(self.options.data, 'x').x;
+		self.minY = _.min(self.options.data, 'y').y;
+		self.maxY = _.max(self.options.data, 'y').y;
 
 		self.width = (self.maxX - self.minX + self.options.cell.width);
 		self.height = (self.maxY - self.minY + self.options.cell.height);
@@ -157,7 +162,6 @@ KnockoutTable.prototype = {
 			if (_.isUndefined(child.x)) {
 				child.x = x;
 				child.y = y;
-				self.refreshMinMax(child);
 			}
 
 			x += self.options.cell.width / 2 + child.width / 2 + self.options.cell.padding;
@@ -183,7 +187,6 @@ KnockoutTable.prototype = {
 
 			parent.x = cell.x - width;
 			parent.y = cell.y - self.linkerHeight;
-			self.refreshMinMax(parent);
 			self.refreshParentsXY(parent);
 		});
 	},
@@ -192,6 +195,39 @@ KnockoutTable.prototype = {
 		if (cell.x < this.minX) this.minX = cell.x;
 		if (cell.y > this.maxY) this.maxY = cell.y;
 		if (cell.y < this.minY) this.minY = cell.y;
+	},
+	optimizeCoordinate: function() {
+		var self = this;
+
+		_.each(self.options.data, function(cell, key) {
+			if (!cell.children || !cell.children.length) return true;
+
+			// in the middle of children
+			cell.x = (_.min(cell.children, 'x').x + _.max(cell.children, 'x').x) / 2;
+
+			// not lower than children
+			var offset = _.min(cell.children, 'y').y - (cell.y + self.options.cell.height + self.options.linker.output.height);
+			if (offset > 0) return true;
+
+			if (!cell.parents || !cell.parents.length) {
+				cell.y += offset;
+			} else {
+				self.adjustRecursively(cell, 0, -offset);
+			}
+		});
+	},
+	adjustRecursively: function(root, xDelta, yDelta) {
+		var q =[root], cell;
+
+		while(q.length) {
+			cell = q.shift();
+			cell.x += xDelta;
+			cell.y += yDelta;
+
+			if (cell.children && cell.children.length) {
+				q = q.concat(cell.children);
+			}
+		}
 	},
 
 	doDraw: function() {

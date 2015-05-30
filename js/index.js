@@ -31,6 +31,58 @@ function KnockoutTable(container, options) {
 }
 
 KnockoutTable.prototype = {
+	constructor: KnockoutTable,
+	config: function(options) {
+		this.options = $.extend(true, this.options, options || {});
+
+		// the orientation of the same level cells
+		this.isHorizontal = this.options.orient == 'top' || this.options.orient == 'bottom';
+		// the total height of the linker
+		this.linkerHeight = this.options.linker.input.height + this.options.linker.output.height;
+	},
+	draw: function() {
+		if (!this.options.data || !_.keys(this.options.data).length) return;
+
+		this.cellTemplate = _.template(this.options.cell.template);
+
+		// turn string reference into object reference
+		this.refreshRefrence();
+
+		// calculate coordinates
+		this.refreshCoordinate();
+
+		// draw each cell and linker
+		this.doDraw();
+	},
+
+	refreshRefrence: function() {
+		var self = this, child;
+
+		_.each(this.options.data, function(value, key) {
+			if (!value.children) return true;
+
+			_.each(value.children, function(str, i) {
+				child = self.options.data[str];
+				if (!child.parents) child.parents = [];
+				child.parents.push(value);
+
+				value.children[i] = child;
+			});
+		});
+	},
+
+	refreshCoordinate: function() {
+		var self = this,
+			roots = self.findRoots();
+
+		// calculate the width of each cell
+		_.each(roots, function(root, i) {
+			self.travelByPostOrder(root);
+		});
+
+		// calculate the x/y by BFS
+		self.travelByBFS(roots[0]);
+	},
 	findRoots: function() {
 		var roots = [];
 		_.each(this.options.data, function(value, key) {
@@ -39,20 +91,6 @@ KnockoutTable.prototype = {
 			}
 		});
 		return roots;
-	},
-	travelByLevel: function(root) {
-		var q =[root], cell;
-
-		while(q.length) {
-			cell = q.shift();
-			if (cell.children && cell.children.length) {
-				q = q.concat(cell.children);
-				this.refreshChildrenXY(cell);
-			}
-			if (cell.parents && cell.parents.length > 1) {
-				this.refreshParentsXY(cell);
-			}
-		}
 	},
 	travelByPostOrder: function(root) {
 		var self = this,
@@ -75,6 +113,36 @@ KnockoutTable.prototype = {
 					cell.width += child.width + self.options.cell.padding;
 				});
 				cell.width -= self.options.cell.padding;
+			}
+		}
+	},
+	travelByBFS: function(root) {
+		var self = this;
+		
+		self.minX = self.maxX = root.x = 0;
+		self.minY = self.maxY = root.y = 0;
+		
+		self.travelByLevel(root);
+
+		self.width = (self.maxX - self.minX + self.options.cell.width);
+		self.height = (self.maxY - self.minY + self.options.cell.height);
+		self.canvas.attr(self.isHorizontal ? 'width' : 'height', self.width + 'px');
+		self.canvas.attr(self.isHorizontal ? 'height' : 'width', self.height + 'px');
+		self.context2d = self.canvas.get(0).getContext('2d');
+		self.container.css('width', self.canvas.attr('width'));
+		self.container.css('height', self.canvas.attr('height'));
+	},
+	travelByLevel: function(root) {
+		var q =[root], cell;
+
+		while(q.length) {
+			cell = q.shift();
+			if (cell.children && cell.children.length) {
+				q = q.concat(cell.children);
+				this.refreshChildrenXY(cell);
+			}
+			if (cell.parents && cell.parents.length > 1) {
+				this.refreshParentsXY(cell);
 			}
 		}
 	},
@@ -125,81 +193,7 @@ KnockoutTable.prototype = {
 		if (cell.y > this.maxY) this.maxY = cell.y;
 		if (cell.y < this.minY) this.minY = cell.y;
 	},
-	travelByBFS: function(root) {
-		var self = this;
-		
-		self.minX = self.maxX = root.x = 0;
-		self.minY = self.maxY = root.y = 0;
-		
-		self.travelByLevel(root);
 
-		self.width = (self.maxX - self.minX + self.options.cell.width);
-		self.height = (self.maxY - self.minY + self.options.cell.height);
-		self.canvas.attr(self.isHorizontal ? 'width' : 'height', self.width + 'px');
-		self.canvas.attr(self.isHorizontal ? 'height' : 'width', self.height + 'px');
-		self.context2d = self.canvas.get(0).getContext('2d');
-		self.container.css('width', self.canvas.attr('width'));
-		self.container.css('height', self.canvas.attr('height'));
-	},
-	translateXY: function(x, y) {
-		var obj = {};
-		x -= this.minX;
-		y -= this.minY;
-
-		// for elements, use top/bottom/left/right
-		// for points, use x/y
-		switch (this.options.orient) {
-			case 'top':
-				obj.left = obj.x = x;
-				obj.top = obj.y = y;
-				break;
-			case 'bottom':
-				obj.right = x;
-				obj.bottom = y;
-				obj.x = this.width - x;
-				obj.y = this.height - y;
-				break;
-			case 'left':
-				obj.left = obj.x = y;
-				obj.bottom = x;
-				obj.y = this.width - x;
-				break;
-			case 'right':
-				obj.top = obj.y = x;
-				obj.right = y;
-				obj.x = this.height - y;
-				break;
-		}
-		return obj;
-	},
-
-	refreshRefrence: function() {
-		var self = this, child;
-
-		_.each(this.options.data, function(value, key) {
-			if (!value.children) return true;
-
-			_.each(value.children, function(str, i) {
-				child = self.options.data[str];
-				if (!child.parents) child.parents = [];
-				child.parents.push(value);
-
-				value.children[i] = child;
-			});
-		});
-	},
-	refreshCoordinate: function() {
-		var self = this,
-			roots = self.findRoots();
-
-		// calculate the width of each cell
-		_.each(roots, function(root, i) {
-			self.travelByPostOrder(root);
-		});
-
-		// calculate the x/y by BFS
-		self.travelByBFS(roots[0]);
-	},
 	doDraw: function() {
 		var self = this,
 			html, css,
@@ -262,28 +256,35 @@ KnockoutTable.prototype = {
 		this.context2d.lineTo(obj2.x, obj2.y);
 		this.context2d.stroke();
 	},
+	translateXY: function(x, y) {
+		var obj = {};
+		x -= this.minX;
+		y -= this.minY;
 
-	constructor: KnockoutTable,
-	config: function(options) {
-		this.options = $.extend(true, this.options, options || {});
-
-		// the orientation of the same level cells
-		this.isHorizontal = this.options.orient == 'top' || this.options.orient == 'bottom';
-		// the total height of the linker
-		this.linkerHeight = this.options.linker.input.height + this.options.linker.output.height;
-	},
-	draw: function() {
-		if (!this.options.data || !_.keys(this.options.data).length) return;
-
-		this.cellTemplate = _.template(this.options.cell.template);
-
-		// turn string reference into object reference
-		this.refreshRefrence();
-
-		// calculate coordinates
-		this.refreshCoordinate();
-
-		// draw each cell and linker
-		this.doDraw();
+		// for elements, use top/bottom/left/right
+		// for points, use x/y
+		switch (this.options.orient) {
+			case 'top':
+				obj.left = obj.x = x;
+				obj.top = obj.y = y;
+				break;
+			case 'bottom':
+				obj.right = x;
+				obj.bottom = y;
+				obj.x = this.width - x;
+				obj.y = this.height - y;
+				break;
+			case 'left':
+				obj.left = obj.x = y;
+				obj.bottom = x;
+				obj.y = this.width - x;
+				break;
+			case 'right':
+				obj.top = obj.y = x;
+				obj.right = y;
+				obj.x = this.height - y;
+				break;
+		}
+		return obj;
 	}
 }

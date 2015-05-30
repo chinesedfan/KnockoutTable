@@ -232,8 +232,7 @@ KnockoutTable.prototype = {
 			busStartY = busEndY = value.y + self.options.cell.height + self.options.linker.output.height;
 
 			_.each(value.children, function(child, i) {
-				x = child.x + self.options.cell.width / 2;
-				y = child.y;
+				var x = child.x + self.options.cell.width / 2;
 
 				if (x < busStartX) busStartX = x;
 				if (x > busEndX) busEndX = x;

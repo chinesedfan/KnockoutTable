@@ -15,6 +15,7 @@ function KnockoutTable(container, options) {
 		linker: {
 			bus: {},
 			input: {
+				offset: 0,
 				height: 50
 			},
 			output: {
@@ -202,6 +203,7 @@ KnockoutTable.prototype = {
 
 		self.container.css('position', 'relative');
 		_.each(this.options.data, function(value, key) {
+			// draw the cell
 			css = $.extend({
 				position: 'absolute',
 				width: self.isHorizontal ? self.options.cell.width : self.options.cell.height,
@@ -211,6 +213,13 @@ KnockoutTable.prototype = {
 			html = self.cellTemplate(value.data);
 			$(html).css(css).appendTo(self.container);
 
+			// draw the line between the cell and its parent's bus
+			_.each(_.sortBy(value.parents, 'x'), function(parent, i) {
+				self.drawLine(value.x + self.options.cell.width / 2 + (i - value.parents.length / 2) * self.options.linker.input.offset, value.y,
+						0, parent.y + self.options.cell.height + self.options.linker.output.height - value.y);
+			});
+
+			// draw the bus and connect the cell with the bus
 			if (!value.children || !value.children.length) return true;
 
 			busStartX = busEndX = value.x + self.options.cell.width / 2;
@@ -219,7 +228,6 @@ KnockoutTable.prototype = {
 			_.each(value.children, function(child, i) {
 				x = child.x + self.options.cell.width / 2;
 				y = child.y;
-				self.drawLine(x, y, 0, busStartY - y);
 
 				if (x < busStartX) busStartX = x;
 				if (x > busEndX) busEndX = x;

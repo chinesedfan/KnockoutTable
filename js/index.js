@@ -219,10 +219,17 @@ KnockoutTable.prototype = {
 
 			// draw the line between the cell and its parent's bus
 			_.each(_.sortBy(value.parents, 'x'), function(parent, i) {
+				var busY = parent.y + self.options.cell.height + self.options.linker.output.height,
+					y = busY < value.y ? value.y : value.y + self.options.cell.height;
+
 				self.context2d.beginPath();
 				self.context2d.strokeStyle = self.options.linker.input.color;
-				self.drawLine(value.x + self.options.cell.width / 2 + (i - value.parents.length / 2) * self.options.linker.input.offset, value.y,
-						0, parent.y + self.options.cell.height + self.options.linker.output.height - value.y);
+				self.drawLine(
+					value.x + self.options.cell.width / 2 + (i - value.parents.length / 2) * self.options.linker.input.offset,
+					y,
+					0,
+					busY - y
+				);
 			});
 
 			// draw the bus and connect the cell with the bus

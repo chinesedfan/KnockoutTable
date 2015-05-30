@@ -43,7 +43,7 @@ function generateSimCityData() {
 				chair: { minute: 20, requires: { wood: 2, nail: 1, hammer: 1} },
 				desk: { minute: 30, requires: { board: 1, nail: 2, hammer: 1} },
 				household: { minute: 75, requires: { textile: 2, rule: 1 } },
-				sofa: { minute: 150, requires: { textile: 3, drill: 1 } },
+				sofa: { minute: 150, requires: { textile: 3, drill: 1, glue: 1 } },
 			}
 		},
 		hardwareStore: {

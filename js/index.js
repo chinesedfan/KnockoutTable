@@ -73,7 +73,7 @@ KnockoutTable.prototype = {
 
 	refreshCoordinate: function() {
 		var self = this,
-			roots = self.findRoots();
+			roots = self.roots = self.findRoots();
 
 		// calculate the width of each cell
 		_.each(roots, function(root, i) {
@@ -199,13 +199,30 @@ KnockoutTable.prototype = {
 	optimizeCoordinate: function() {
 		var self = this;
 
+		// in the middle of children
+		_.each(self.roots, function(root, i) {
+			var stack = [root], cell;
+
+			while (stack.length) {
+				cell = stack.pop();
+
+				if (!cell.children || !cell.children.length) {
+					continue;
+				} else if (!cell.visited) {
+					cell.visited = true;
+					stack.push(cell);
+					stack = stack.concat(cell.children);
+				} else {
+					cell.visited = false;
+					cell.x = (_.min(cell.children, 'x').x + _.max(cell.children, 'x').x) / 2;
+				}
+			}
+		});
+
+		// not lower than children
 		_.each(self.options.data, function(cell, key) {
 			if (!cell.children || !cell.children.length) return true;
 
-			// in the middle of children
-			cell.x = (_.min(cell.children, 'x').x + _.max(cell.children, 'x').x) / 2;
-
-			// not lower than children
 			var offset = _.min(cell.children, 'y').y - (cell.y + self.options.cell.height + self.options.linker.output.height);
 			if (offset > 0) return true;
 

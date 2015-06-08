@@ -221,16 +221,15 @@ KnockoutTable.prototype = {
 
 		// not lower than children
 		_.each(self.options.data, function(cell, key) {
-			if (!cell.children || !cell.children.length) return true;
+			var minY = cell.y + self.options.cell.height + self.linkerHeight,
+				offset;
 
-			var offset = _.min(cell.children, 'y').y - (cell.y + self.options.cell.height + self.options.linker.output.height);
-			if (offset > 0) return true;
+			_.each(cell.children, function(child, i) {
+				offset = child.y - minY; 
+				if (isNaN(offset) || offset > 0) return true;
 
-			if (!cell.parents || !cell.parents.length) {
-				cell.y += offset;
-			} else {
-				self.adjustRecursively(cell, 0, -offset);
-			}
+				self.adjustRecursively(child, 0, -offset);
+			});
 		});
 	},
 	adjustRecursively: function(root, xDelta, yDelta) {

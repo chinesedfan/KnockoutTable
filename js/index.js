@@ -168,26 +168,34 @@ KnockoutTable.prototype = {
 		});
 	},
 	refreshParentsXY: function(cell) {
-		var self = this;
+		var self = this,
+			startX = cell.x;
 
 		if (!cell.parents || !cell.parents.length) {
 			self.travelByLevel(cell);
 			return;
 		}
 
+		// use confirmed parents' max x as the start point
+		_.each(cell.parents, function(parent, i) {
+			if (_.isUndefined(parent.x)) return true;
+
+			var width = _.reduce(parent.children, function(memo, child) {
+				memo += child.width + self.options.cell.padding;
+			}, -self.options.cell.padding);
+			var temp = parent.x + self.options.cell.width / 2 + width / 2 + self.options.cell.padding;
+			if (temp > startX) startX = temp;
+		});
+
+		// update those non-confirmed
 		_.each(cell.parents, function(parent, i) {
 			if (!_.isUndefined(parent.x)) return true;
 
-			var width = 0;
-			_.each(parent.children, function(child, j) {
-				if (child == cell) return false;
-
-				width += child.width + self.options.cell.padding;
-			});
-
-			parent.x = cell.x - width;
+			parent.x = startX + parent.width / 2 - self.options.cell.width / 2;
 			parent.y = cell.y - self.linkerHeight;
 			self.refreshParentsXY(parent);
+
+			startX += parent.width + self.options.cell.padding;
 		});
 	},
 	refreshMinMax: function(cell) {

@@ -192,7 +192,7 @@ KnockoutTable.prototype = {
 			if (!_.isUndefined(parent.x)) return true;
 
 			parent.x = startX + parent.width / 2 - self.options.cell.width / 2;
-			parent.y = cell.y - self.linkerHeight;
+			parent.y = cell.y - self.linkerHeight - self.options.cell.height;
 			self.refreshParentsXY(parent);
 
 			startX += parent.width + self.options.cell.padding;

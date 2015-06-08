@@ -239,6 +239,23 @@ KnockoutTable.prototype = {
 				self.adjustRecursively(child, 0, -offset);
 			});
 		});
+
+		// but not too low
+		_.each(self.roots, function(root, i) {
+			var q =[root], cell;
+
+			while(q.length) {
+				cell = q.shift();
+				if (cell.children && cell.children.length) {
+					q = q.concat(cell.children);
+				}
+				if (cell.parents && cell.parents.length > 1) {
+					minY = _.max(cell.parents, 'y').y + self.options.cell.height + self.linkerHeight;
+					offset = cell.y - minY;
+					if (offset > 0) self.adjustRecursively(cell, 0, -offset);
+				}
+			}
+		});
 	},
 	adjustRecursively: function(root, xDelta, yDelta) {
 		var q =[root], cell;

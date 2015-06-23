@@ -77,51 +77,33 @@ KnockoutTable.prototype = {
 
 		// calculate the width of each cell
 		_.each(roots, function(root, i) {
-			self.travelByPostOrder(root);
-		});
+			self.travelByPostOrder(root, function(cell) {
+				if (!cell.children || !cell.children.length) {
+					cell.width = self.options.cell.width;
+					return true;
+				}
 
-		// calculate the x/y by BFS
-		self.travelByBFS(roots[0]);
-	},
-	findRoots: function() {
-		var roots = [];
-		_.each(this.options.data, function(value, key) {
-			if (!value.parents || !value.parents.length) {
-				roots.push(value);
-			}
-		});
-		return roots;
-	},
-	travelByPostOrder: function(root) {
-		var self = this,
-			stack = [root], cell;
-
-		while (stack.length) {
-			cell = stack.pop();
-			if (cell.width) continue;
-
-			if (!cell.children || !cell.children.length) {
-				cell.width = self.options.cell.width;
-			} else if (!cell.visited) {
-				cell.visited = true;
-				stack.push(cell);
-				stack = stack.concat(cell.children);
-			} else {
-				cell.visited = false;
 				cell.width = 0;
 				_.each(cell.children, function(child, i) {
 					cell.width += child.width + self.options.cell.padding;
 				});
 				cell.width -= self.options.cell.padding;
-			}
-		}
-	},
-	travelByBFS: function(root) {
-		var self = this;
+			});
+		});
 
+		// calculate the x and y
+		var root = roots[0];
 		root.x = root.y = 0;
 		
-		self.travelByLevel(root);
+		self.travelByLevel(root, function(cell) {
+			if (cell.children && cell.children.length) {
+				self.refreshChildrenXY(cell);
+			}
+			if (cell.parents && cell.parents.length > 1) {
+				self.refreshParentsXY(cell);
+			}
+		});
+
 		self.optimizeCoordinate();
 
 		self.minX = _.min(self.options.data, 'x').x;
@@ -137,18 +119,39 @@ KnockoutTable.prototype = {
 		self.container.css('width', self.canvas.attr('width'));
 		self.container.css('height', self.canvas.attr('height'));
 	},
-	travelByLevel: function(root) {
+	findRoots: function() {
+		var roots = [];
+		_.each(this.options.data, function(value, key) {
+			if (!value.parents || !value.parents.length) {
+				roots.push(value);
+			}
+		});
+		return roots;
+	},
+	travelByPostOrder: function(root, iteratee) {
+		var self = this,
+			stack = [root], cell;
+
+		while (stack.length) {
+			cell = stack.pop();
+			if (!cell.visited) {
+				cell.visited = true;
+				stack.push(cell);
+				stack = stack.concat(cell.children);
+			} else {
+				cell.visited = false;
+				iteratee(cell);
+			}
+		}
+	},
+	travelByLevel: function(root, iteratee) {
 		var q =[root], cell;
 
 		while(q.length) {
 			cell = q.shift();
-			if (cell.children && cell.children.length) {
-				q = q.concat(cell.children);
-				this.refreshChildrenXY(cell);
-			}
-			if (cell.parents && cell.parents.length > 1) {
-				this.refreshParentsXY(cell);
-			}
+			q = q.concat(cell.children);
+
+			iteratee(cell);
 		}
 	},
 	refreshChildrenXY: function(cell) {
@@ -172,7 +175,14 @@ KnockoutTable.prototype = {
 			startX = cell.x;
 
 		if (!cell.parents || !cell.parents.length) {
-			self.travelByLevel(cell);
+			self.travelByLevel(cell, function(cell) {
+				if (cell.children && cell.children.length) {
+					self.refreshChildrenXY(cell);
+				}
+				if (cell.parents && cell.parents.length > 1) {
+					self.refreshParentsXY(cell);
+				}
+			});
 			return;
 		}
 
@@ -207,54 +217,36 @@ KnockoutTable.prototype = {
 	optimizeCoordinate: function() {
 		var self = this;
 
-		// in the middle of children
 		_.each(self.roots, function(root, i) {
-			var stack = [root], cell;
+			self.travelByPostOrder(root, function(cell) {
+				if (!cell.children || !cell.children.length) return true;
 
-			while (stack.length) {
-				cell = stack.pop();
+				// in the middle of children
+				cell.x = (_.min(cell.children, 'x').x + _.max(cell.children, 'x').x) / 2;
 
-				if (!cell.children || !cell.children.length) {
-					continue;
-				} else if (!cell.visited) {
-					cell.visited = true;
-					stack.push(cell);
-					stack = stack.concat(cell.children);
-				} else {
-					cell.visited = false;
-					cell.x = (_.min(cell.children, 'x').x + _.max(cell.children, 'x').x) / 2;
-				}
-			}
-		});
+				// not lower than children
+				var minY = cell.y + self.options.cell.height + self.linkerHeight,
+					offset;
 
-		// not lower than children
-		_.each(self.options.data, function(cell, key) {
-			var minY = cell.y + self.options.cell.height + self.linkerHeight,
-				offset;
+				_.each(cell.children, function(child, i) {
+					offset = child.y - minY; 
+					if (isNaN(offset) || offset > 0) return true;
 
-			_.each(cell.children, function(child, i) {
-				offset = child.y - minY; 
-				if (isNaN(offset) || offset > 0) return true;
-
-				self.adjustRecursively(child, 0, -offset);
+					self.adjustRecursively(child, 0, -offset);
+				});
 			});
 		});
 
+
 		// but not too low
 		_.each(self.roots, function(root, i) {
-			var q =[root], cell;
-
-			while(q.length) {
-				cell = q.shift();
-				if (cell.children && cell.children.length) {
-					q = q.concat(cell.children);
-				}
+			self.travelByLevel(root, function(cell) {
 				if (cell.parents && cell.parents.length > 1) {
 					minY = _.max(cell.parents, 'y').y + self.options.cell.height + self.linkerHeight;
 					offset = cell.y - minY;
 					if (offset > 0) self.adjustRecursively(cell, 0, -offset);
 				}
-			}
+			});
 		});
 	},
 	adjustRecursively: function(root, xDelta, yDelta) {

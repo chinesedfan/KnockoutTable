@@ -5,6 +5,7 @@ function KnockoutTable(container, options) {
 	this.options = {
 		orient: 'top', // or 'bottom, left, right', means the position of the root node
 		expansion: 'single',  // or 'double'
+		needbus: true,
 		padding: 0, // or { left: 0, right: 0, top: 0, bottom: 0 }
 		cell: {
 			width: 120,
@@ -219,14 +220,15 @@ KnockoutTable.prototype = {
 			// draw the line between the cell and its parent's bus
 			_.each(_.sortBy(value.parents, 'x'), function(parent, i) {
 				var busY = parent.y + self.options.cell.height + self.options.linker.output.height,
+					x = value.x + self.options.cell.width / 2 + (i - value.parents.length / 2) * self.options.linker.input.offset,
 					y = busY < value.y ? value.y : value.y + self.options.cell.height;
 
 				self.context2d.beginPath();
 				self.context2d.strokeStyle = self.options.linker.input.color;
 				self.drawLine(
-					value.x + self.options.cell.width / 2 + (i - value.parents.length / 2) * self.options.linker.input.offset,
+					x,
 					y,
-					0,
+					self.options.needbus ? 0 : parent.x + self.options.cell.width / 2 - x,
 					busY - y
 				);
 			});
@@ -246,7 +248,7 @@ KnockoutTable.prototype = {
 
 			self.context2d.beginPath();
 			self.context2d.strokeStyle = self.options.linker.bus.color;
-			self.drawLine(busStartX, busStartY, busEndX - busStartX, busEndY - busStartY);
+			self.options.needbus && self.drawLine(busStartX, busStartY, busEndX - busStartX, busEndY - busStartY);
 
 			self.context2d.beginPath();
 			self.context2d.strokeStyle = self.options.linker.output.color;

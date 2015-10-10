@@ -88,11 +88,13 @@ KnockoutTable.prototype = {
 
 		// only pick the smallest level
 		_.each(roots, function(root, i) {
-			self.travelByLevel(root, function(cell) {
-				cell.level = _.min(cell.levels);
-				if (cell.level < minLevel) minLevel = cell.level;
+			root.level = _.min(root.levels);
+			if (root.level < minLevel) minLevel = root.level;
 
-				self.updateFieldLevels(cell, 'children', cell.level + 1);
+			self.travelByLevel(root, function(cell) {
+				_.each(cell.children, function(child) {
+					child.level = cell.level + 1;
+				});
 			});
 		});
 

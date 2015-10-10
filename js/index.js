@@ -46,16 +46,18 @@ KnockoutTable.prototype = {
 		this.cellTemplate = _.template(this.options.cell.template);
 
 		// turn string reference into object reference
-		this.convertStringToReference();
+		this.buildCellRelations();
 
-		// calculate coordinates
-		this.refreshCoordinate();
+		// calculation
+		this.calculateLevel();
+		this.calculateCoordinate();
+		this.calculateSize();
 
 		// draw each cell and linker
 		this.doDraw();
 	},
 
-	convertStringToReference: function() {
+	buildCellRelations: function() {
 		var self = this, child;
 
 		_.each(this.options.data, function(value, key) {
@@ -71,40 +73,67 @@ KnockoutTable.prototype = {
 		});
 	},
 
-	refreshCoordinate: function() {
+	calculateLevel: function() {
 		var self = this,
-			roots = self.roots = self.findRoots();
+			minLevel = 0,
+			roots = self.findRoots(), leafs = self.findLeafs();
 
-		// calculate the width of each cell
+		// calculate all possible levels of each root
+		_.each(leafs, function(leaf, i) {
+			leaf.levels = [0];
+			self.travelByLevel(leaf, function(cell) {
+				self.updateFieldLevels(cell, 'parents', cell.levels[cell.levels.length - 1] - 1);
+			}, 'parents');
+		});
+
+		// only pick the smallest level
 		_.each(roots, function(root, i) {
-			self.travelByPostOrder(root, function(cell) {
-				if (!cell.children || !cell.children.length) {
-					cell.width = self.options.cell.width;
-					return true;
-				}
+			self.travelByLevel(root, function(cell) {
+				cell.level = _.min(cell.levels);
+				if (cell.level < minLevel) minLevel = cell.level;
 
-				cell.width = 0;
-				_.each(cell.children, function(child, i) {
-					cell.width += child.width + self.options.cell.padding;
-				});
-				cell.width -= self.options.cell.padding;
+				self.updateFieldLevels(cell, 'children', cell.level + 1);
 			});
 		});
 
-		// calculate the x and y
-		var root = roots[0];
-		root.x = root.y = 0;
-		
-		self.travelByLevel(root, function(cell) {
-			if (cell.children && cell.children.length) {
-				self.refreshChildrenXY(cell);
-			}
-			if (cell.parents && cell.parents.length > 1) {
-				self.refreshParentsXY(cell);
-			}
-		});
+		// generate the level map with 0 as the base level
+		self.levelMap = {};
+		_.each(self.options.data, function(cell, i) {
+			cell.level -= minLevel;
+			cell.levels = null;
 
-		self.optimizeCoordinate();
+			if (!self.levelMap[cell.level]) self.levelMap[cell.level] = [];
+			self.levelMap[cell.level].push(cell);
+		});
+	},
+	updateFieldLevels: function(cell, field, level) {
+		if (!cell[field] || !cell[field].length) return;
+
+		_.each(cell[field], function(other, i) {
+			if (!other.levels) other.levels = [];
+			other.levels.push(level);
+		});
+	},
+	
+	calculateCoordinate: function() {
+		var self = this,
+			x, y;
+
+		_.each(self.levelMap, function(list, level) {
+			y = level * (self.options.cell.height + self.linkerHeight) + self.options.cell.height;
+			x = 0;
+
+			_.each(list, function(cell, i) {
+				cell.x = x;
+				cell.y = y;
+
+				x += self.options.cell.width + self.options.cell.padding;
+			});
+		});
+	},
+	
+	calculateSize: function() {
+		var self = this;
 
 		self.minX = _.min(self.options.data, 'x').x;
 		self.maxX = _.max(self.options.data, 'x').x;
@@ -119,6 +148,7 @@ KnockoutTable.prototype = {
 		self.container.css('width', self.canvas.attr('width'));
 		self.container.css('height', self.canvas.attr('height'));
 	},
+
 	findRoots: function() {
 		var roots = [];
 		_.each(this.options.data, function(value, key) {
@@ -127,6 +157,15 @@ KnockoutTable.prototype = {
 			}
 		});
 		return roots;
+	},
+	findLeafs: function() {
+		var leafs = [];
+		_.each(this.options.data, function(value, key) {
+			if (!value.children || !value.children.length) {
+				leafs.push(value);
+			}
+		});
+		return leafs;
 	},
 	travelByPostOrder: function(root, iteratee) {
 		var self = this,
@@ -144,122 +183,17 @@ KnockoutTable.prototype = {
 			}
 		}
 	},
-	travelByLevel: function(root, iteratee) {
-		var q =[root], cell;
+	travelByLevel: function(root, iteratee, field) {
+		var q = [root], cell;
 
+		field = field || 'children';
 		while(q.length) {
 			cell = q.shift();
-			q = q.concat(cell.children);
+			if (cell[field] && cell[field].length) {
+				q = q.concat(cell[field]);
+			}
 
 			iteratee(cell);
-		}
-	},
-	refreshChildrenXY: function(cell) {
-		var self = this,
-			x = cell.x + self.options.cell.width / 2 - cell.width / 2,
-			y = cell.y + (self.options.cell.height + self.linkerHeight);
-
-		_.each(cell.children, function(child, i) {
-			x += child.width / 2 - self.options.cell.width / 2;
-
-			if (_.isUndefined(child.x)) {
-				child.x = x;
-				child.y = y;
-			}
-
-			x += self.options.cell.width / 2 + child.width / 2 + self.options.cell.padding;
-		});
-	},
-	refreshParentsXY: function(cell) {
-		var self = this,
-			startX = cell.x;
-
-		if (!cell.parents || !cell.parents.length) {
-			self.travelByLevel(cell, function(cell) {
-				if (cell.children && cell.children.length) {
-					self.refreshChildrenXY(cell);
-				}
-				if (cell.parents && cell.parents.length > 1) {
-					self.refreshParentsXY(cell);
-				}
-			});
-			return;
-		}
-
-		// use confirmed parents' max x as the start point
-		_.each(cell.parents, function(parent, i) {
-			if (_.isUndefined(parent.x)) return true;
-
-			var width = _.reduce(parent.children, function(memo, child) {
-				memo += child.width + self.options.cell.padding;
-			}, -self.options.cell.padding);
-			var temp = parent.x + self.options.cell.width / 2 + width / 2 + self.options.cell.padding;
-			if (temp > startX) startX = temp;
-		});
-
-		// update those non-confirmed
-		_.each(cell.parents, function(parent, i) {
-			if (!_.isUndefined(parent.x)) return true;
-
-			parent.x = startX + parent.width / 2 - self.options.cell.width / 2;
-			parent.y = cell.y - self.linkerHeight - self.options.cell.height;
-			self.refreshParentsXY(parent);
-
-			startX += parent.width + self.options.cell.padding;
-		});
-	},
-	refreshMinMax: function(cell) {
-		if (cell.x > this.maxX) this.maxX = cell.x;
-		if (cell.x < this.minX) this.minX = cell.x;
-		if (cell.y > this.maxY) this.maxY = cell.y;
-		if (cell.y < this.minY) this.minY = cell.y;
-	},
-	optimizeCoordinate: function() {
-		var self = this;
-
-		_.each(self.roots, function(root, i) {
-			self.travelByPostOrder(root, function(cell) {
-				if (!cell.children || !cell.children.length) return true;
-
-				// in the middle of children
-				cell.x = (_.min(cell.children, 'x').x + _.max(cell.children, 'x').x) / 2;
-
-				// not lower than children
-				var minY = cell.y + self.options.cell.height + self.linkerHeight,
-					offset;
-
-				_.each(cell.children, function(child, i) {
-					offset = child.y - minY; 
-					if (isNaN(offset) || offset > 0) return true;
-
-					self.adjustRecursively(child, 0, -offset);
-				});
-			});
-		});
-
-
-		// but not too low
-		_.each(self.roots, function(root, i) {
-			self.travelByLevel(root, function(cell) {
-				if (cell.parents && cell.parents.length > 1) {
-					minY = _.max(cell.parents, 'y').y + self.options.cell.height + self.linkerHeight;
-					offset = cell.y - minY;
-					if (offset > 0) self.adjustRecursively(cell, 0, -offset);
-				}
-			});
-		});
-	},
-	adjustRecursively: function(root, xDelta, yDelta) {
-		var q =[root], cell;
-
-		while(q.length) {
-			cell = q.shift();
-			cell.x += xDelta;
-			cell.y += yDelta;
-
-			if (cell.children && cell.children.length) {
-				q = q.concat(cell.children);
-			}
 		}
 	},
 

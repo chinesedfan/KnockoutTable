@@ -94,6 +94,8 @@ KnockoutTable.prototype = {
 
 			self.travelByLevel(root, function(cell) {
 				_.each(cell.children, function(child) {
+					if (!_.isUndefined(child.level) && child.level >= cell.level + 1) return;
+
 					child.level = cell.level + 1;
 				});
 			});

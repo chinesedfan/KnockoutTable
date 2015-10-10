@@ -46,7 +46,7 @@ KnockoutTable.prototype = {
 		this.cellTemplate = _.template(this.options.cell.template);
 
 		// turn string reference into object reference
-		this.refreshRefrence();
+		this.convertStringToReference();
 
 		// calculate coordinates
 		this.refreshCoordinate();
@@ -55,7 +55,7 @@ KnockoutTable.prototype = {
 		this.doDraw();
 	},
 
-	refreshRefrence: function() {
+	convertStringToReference: function() {
 		var self = this, child;
 
 		_.each(this.options.data, function(value, key) {

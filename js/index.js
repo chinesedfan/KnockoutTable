@@ -1,4 +1,4 @@
-function KnockoutTable(container, options) {
+function MergeDiagram(container, options) {
 	this.container = container || $('<div></div>').appendTo($('body'));
 	this.canvas = $('<canvas></canvas>').appendTo(this.container);
 
@@ -31,8 +31,8 @@ function KnockoutTable(container, options) {
 	this.config(options);
 }
 
-KnockoutTable.prototype = {
-	constructor: KnockoutTable,
+MergeDiagram.prototype = {
+	constructor: MergeDiagram,
 	config: function(options) {
 		this.options = $.extend(true, this.options, options || {});
 

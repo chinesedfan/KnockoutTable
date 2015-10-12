@@ -17,5 +17,5 @@ var options = {
 	}
 };
 
-var table = new KnockoutTable($('.J_container'), options[test]);
+var table = new MergeDiagram($('.J_container'), options[test]);
 table.draw();

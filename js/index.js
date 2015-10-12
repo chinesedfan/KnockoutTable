@@ -124,17 +124,75 @@ MergeDiagram.prototype = {
 		var self = this,
 			x, y;
 
-		_.each(self.levelMap, function(list, level) {
-			y = level * (self.options.cell.height + self.linkerHeight) + self.options.cell.height;
-			x = 0;
-
-			_.each(list, function(cell, i) {
-				cell.x = x;
-				cell.y = y;
-
-				x += self.options.cell.width + self.options.cell.padding;
-			});
+		var longestLevel = _.max(_.keys(self.levelMap, function(level) {
+			return self.levelMap[key].length;
+		})), longestCount = self.levelMap[longestLevel].length;
+		_.each(self.levelMap[longestLevel], function(cell, i) {
+			cell.x = self.getStandardX(i);
+			cell.y = self.getStandardY(cell.level);
 		});
+
+		var q = _.values(self.options.data), cell;
+
+		while (q.length) {
+			cell = q.shift();
+			if (!self.isConfirmedCell(cell)) {
+				var x1, x2;
+				if (self.isConfirmedList(cell.children)) {
+					x1 = self.getCenterX(cell.children);
+				}
+				if (self.isConfirmedList(cell.parents)) {
+					x2 = self.getCenterX(cell.parents);
+				}
+
+				if (_.isUndefined(x1) && _.isUndefined(x2)) {
+					q.push(cell);
+					continue;
+				}
+				if (_.isUndefined(x1)) {
+					cell.x = x2;
+				} else if (_.isUndefined(x2)) {
+					cell.x = x1;
+				} else {
+					cell.x = (x1 + x2) / 2;
+				}
+				cell.y = self.getStandardY(cell.level);
+			}
+		}
+
+		_.each(self.levelMap, function(list, level) {
+			var sorted = _.sortBy(list, function(cell, i) {
+				return -cell.x;
+			});
+			_.each(sorted, function(cell, i) {
+				cell.index = i;
+				cell.x = self.getStandardX(cell.index + (longestCount - list.length) / 2);
+			});
+		})
+	},
+	getStandardX: function(index) {
+		return index * (this.options.cell.width + this.options.cell.padding);
+	},
+	getStandardY: function(level) {
+		return level * (this.options.cell.height + this.linkerHeight) + this.options.cell.height;
+	},
+	getCenterX: function(list) {
+		var min = _.min(list, 'x');
+			max = _.max(list, 'x');
+
+		return (min.x + max.x) / 2;
+	},
+
+	isConfirmedList: function(list) {
+		if (!list || !list.length) return false;
+
+		var self = this;
+		return _.every(list, function(cell, i) {
+			return self.isConfirmedCell(cell);
+		});
+	},
+	isConfirmedCell: function(cell) {
+		return !_.isUndefined(cell.x);
 	},
 	
 	calculateSize: function() {

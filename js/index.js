@@ -124,41 +124,26 @@ MergeDiagram.prototype = {
 		var self = this,
 			x, y;
 
-		// put cells that on the longest level in each's standard position
 		var longestLevel = _.max(_.keys(self.levelMap, function(level) {
 			return self.levelMap[key].length;
 		})), longestCount = self.levelMap[longestLevel].length;
-		_.each(self.levelMap[longestLevel], function(cell, i) {
-			cell.x = self.getStandardX(i);
-			cell.y = self.getStandardY(cell.level);
-		});
 
-		// determinate the rest based on its children or parents
-		var q = _.values(self.options.data), cell;
-		while (q.length) {
-			cell = q.shift();
-			if (!self.isConfirmedCell(cell)) {
-				var x1, x2;
-				if (self.isConfirmedList(cell.children)) {
-					x1 = self.getCenterX(cell.children);
-				}
-				if (self.isConfirmedList(cell.parents)) {
-					x2 = self.getCenterX(cell.parents);
-				}
-
-				if (_.isUndefined(x1) && _.isUndefined(x2)) {
-					q.push(cell);
-					continue;
-				}
-				if (_.isUndefined(x1)) {
-					cell.x = x2;
-				} else if (_.isUndefined(x2)) {
-					cell.x = x1;
-				} else {
-					cell.x = (x1 + x2) / 2;
-				}
+		// initilize with standard position
+		_.each(self.levelMap, function(list, level) {
+			_.each(list, function(cell, i) {
+				cell.x = self.getStandardX(i);
 				cell.y = self.getStandardY(cell.level);
-			}
+			});
+		});	
+
+		// loop to adjust to the balanced position
+		var round = 15;
+		while (round--) {
+			_.each(self.levelMap, function(list, level) {
+				_.each(list, function(cell, i) {
+					cell.x = self.getBalancedX(cell);
+				});
+			});	
 		}
 
 		// sort and gather each level's cells together in the middle
@@ -170,7 +155,7 @@ MergeDiagram.prototype = {
 				cell.index = i;
 				cell.x = self.getStandardX(cell.index + (longestCount - list.length) / 2);
 			});
-		})
+		});
 	},
 	getStandardX: function(index) {
 		return index * (this.options.cell.width + this.options.cell.padding);
@@ -183,6 +168,20 @@ MergeDiagram.prototype = {
 			max = _.max(list, 'x');
 
 		return (min.x + max.x) / 2;
+	},
+	getBalancedX: function(cell) {
+		var self = this,
+			list = $.extend([], cell.children, cell.parents),
+			force = 0;
+
+		_.each(list, function(other, i) {
+			force += self.getForce(cell, other);
+		});
+
+		return cell.x + force / list.length;
+	},
+	getForce: function(c1, c2) {
+		return c2.x - c1.x;
 	},
 
 	isConfirmedList: function(list) {

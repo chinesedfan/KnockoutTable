@@ -124,6 +124,7 @@ MergeDiagram.prototype = {
 		var self = this,
 			x, y;
 
+		// put cells that on the longest level in each's standard position
 		var longestLevel = _.max(_.keys(self.levelMap, function(level) {
 			return self.levelMap[key].length;
 		})), longestCount = self.levelMap[longestLevel].length;
@@ -132,8 +133,8 @@ MergeDiagram.prototype = {
 			cell.y = self.getStandardY(cell.level);
 		});
 
+		// determinate the rest based on its children or parents
 		var q = _.values(self.options.data), cell;
-
 		while (q.length) {
 			cell = q.shift();
 			if (!self.isConfirmedCell(cell)) {
@@ -160,6 +161,7 @@ MergeDiagram.prototype = {
 			}
 		}
 
+		// sort and gather each level's cells together in the middle
 		_.each(self.levelMap, function(list, level) {
 			var sorted = _.sortBy(list, function(cell, i) {
 				return -cell.x;

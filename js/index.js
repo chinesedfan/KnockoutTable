@@ -134,28 +134,21 @@ MergeDiagram.prototype = {
 				cell.x = self.getStandardX(i);
 				cell.y = self.getStandardY(cell.level);
 			});
-		});	
+		});
 
 		// loop to adjust to the balanced position
-		var round = 15;
+		var round = 4;
 		while (round--) {
 			_.each(self.levelMap, function(list, level) {
 				_.each(list, function(cell, i) {
 					cell.x = self.getBalancedX(cell);
 				});
-			});	
-		}
+			});
 
-		// sort and gather each level's cells together in the middle
-		_.each(self.levelMap, function(list, level) {
-			var sorted = _.sortBy(list, function(cell, i) {
-				return -cell.x;
+			_.each(self.levelMap, function(list, level) {
+				self.expandCellList(list);
 			});
-			_.each(sorted, function(cell, i) {
-				cell.index = i;
-				cell.x = self.getStandardX(cell.index + (longestCount - list.length) / 2);
-			});
-		});
+		}
 	},
 	getStandardX: function(index) {
 		return index * (this.options.cell.width + this.options.cell.padding);
@@ -182,6 +175,60 @@ MergeDiagram.prototype = {
 	},
 	getForce: function(c1, c2) {
 		return c2.x - c1.x;
+	},
+
+	expandCellList: function(list) {
+		var self = this,
+			zoneList = [],
+			current;
+
+		// covert to internal list
+		list = _.sortBy(list, 'x');
+
+		_.each(list, function(cell, i) {
+			if (!current || current.right <= cell.x) {
+				current = {
+					left: cell.x,
+					right: cell.x + self.options.cell.width + self.options.cell.padding,
+					cells: [cell]
+				};
+				zoneList.push(current);
+			} else {
+				current.right = cell.x + self.options.cell.width + self.options.cell.padding;
+				current.cells.push(cell);
+			}
+		});
+
+		// expand each internal
+		_.each(zoneList, function(zone, i) {
+			zone.width = zone.cells.length * (self.options.cell.width + self.options.cell.padding);
+
+			prevZone = (i != 0) ? zoneList[i - 1] : {
+				right: 0
+			};
+
+			// expand based on the center
+			zone.center = self.getExpandCenter(zone.cells);
+			zone.left = zone.center - zone.width / 2;
+
+			if (zone.left < prevZone.right) {
+				zone.left = prevZone.right;
+			}
+			zone.right = zone.left + zone.width;
+		});
+
+		// update x and y
+		_.each(zoneList, function(zone) {
+			_.each(zone.cells, function(cell, i) {
+				cell.x = zone.left + self.getStandardX(i);
+			});
+		});
+	},
+	getExpandCenter: function(list) {
+		var xSum = _.reduce(list, function(memo, cell) {
+			return memo + cell.x;
+		}, 0);
+		return xSum / list.length + (this.options.cell.width + this.options.cell.padding) / 2;
 	},
 
 	isConfirmedList: function(list) {

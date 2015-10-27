@@ -143,9 +143,6 @@ MergeDiagram.prototype = {
 				_.each(list, function(cell, i) {
 					cell.x = self.getBalancedX(cell);
 				});
-			});
-
-			_.each(self.levelMap, function(list, level) {
 				self.expandCellList(list);
 			});
 		}

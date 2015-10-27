@@ -203,16 +203,12 @@ MergeDiagram.prototype = {
 		_.each(zoneList, function(zone, i) {
 			zone.width = zone.cells.length * (self.options.cell.width + self.options.cell.padding);
 
-			prevZone = (i != 0) ? zoneList[i - 1] : {
-				right: 0
-			};
-
 			// expand based on the center
 			zone.center = self.getExpandCenter(zone.cells);
 			zone.left = zone.center - zone.width / 2;
 
-			if (zone.left < prevZone.right) {
-				zone.left = prevZone.right;
+			if (i != 0 && zone.left < zoneList[i - 1].right) {
+				zone.left = zoneList[i - 1].right;
 			}
 			zone.right = zone.left + zone.width;
 		});

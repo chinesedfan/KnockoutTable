@@ -161,14 +161,20 @@ MergeDiagram.prototype = {
 	},
 	getBalancedX: function(cell) {
 		var self = this,
-			list = $.extend([], cell.children, cell.parents),
+			list,
 			force = 0;
+
+		if (cell.parents && cell.parents.length == 1) {
+			list = cell.children;
+		} else {
+			list = $.extend([], cell.children, cell.parents);
+		}
 
 		_.each(list, function(other, i) {
 			force += self.getForce(cell, other);
 		});
 
-		return cell.x + force / list.length;
+		return list.length ? cell.x + force / list.length : cell.x;
 	},
 	getForce: function(c1, c2) {
 		return c2.x - c1.x;

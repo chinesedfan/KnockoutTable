@@ -165,7 +165,7 @@ MergeDiagram.prototype = {
 			force = 0;
 
 		if (cell.parents && cell.parents.length == 1) {
-			list = cell.children;
+			list = $.extend([], cell.children);
 		} else {
 			list = $.extend([], cell.children, cell.parents);
 		}

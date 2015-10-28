@@ -5,6 +5,7 @@ function MergeDiagram(container, options) {
 	this.options = {
 		orient: 'top', // or 'bottom, left, right', means the position of the root node
 		expansion: 'single',  // or 'double'
+		maxround: 99,
 		needbus: true,
 		padding: 0, // or { left: 0, right: 0, top: 0, bottom: 0 }
 		cell: {
@@ -137,15 +138,35 @@ MergeDiagram.prototype = {
 		});
 
 		// loop to adjust to the balanced position
-		var round = 4;
-		while (round--) {
+		var round = 0,
+			threshold = 10,
+			prevVector, curVector, changed;
+		while (round++ < self.options.maxround) {
+			prevVector = curVector;
+			curVector = {};
+
 			_.each(self.levelMap, function(list, level) {
 				_.each(list, function(cell, i) {
+					cell.prevX = cell.x;
 					cell.x = self.getBalancedX(cell);
 				});
 				self.expandCellList(list);
+
+				curVector[level] = 0;
+				_.each(list, function(cell, i) {
+					curVector[level] += Math.abs(cell.x - cell.prevX);
+				});
 			});
+
+			changed = 0;
+			_.each(self.levelMap, function(list, level) {
+				changed += Math.abs(curVector[level] - (prevVector ? prevVector[level] : 0));
+			});
+			if (changed < threshold) {
+				break;
+			}
 		}
+		console.log('Total round=' + round);
 	},
 	getStandardX: function(index) {
 		return index * (this.options.cell.width + this.options.cell.padding);
